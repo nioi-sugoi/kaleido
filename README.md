@@ -10,4 +10,4 @@ docker compose db up
 npx prisma migrate dev
 npx prisma generate
 yarn start
-`
+
