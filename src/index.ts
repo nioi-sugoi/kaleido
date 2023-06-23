@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { createInterface } from "readline/promises";
+import { savePachinkoTypesOnDailyPost } from "savePachinkoTypesOnDailyPost";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -20,28 +21,35 @@ const main = async () => {
   const startYmd = await rl.question("開始のYYYYMMDD: ");
   const endYmd = await rl.question("終了のYYYYMMDD: ");
 
-  const pachinkoTypes = await prisma.pachinko_type.findMany();
-
   const dayDiff = dayjs(endYmd).diff(dayjs(startYmd), "day");
 
-  await prisma.$transaction(
-    async (tx) => {
-      for (let i = 0; i <= dayDiff; i++) {
-        const ymd = dayjs(startYmd).add(i, "day").format("YYYYMMDD");
+  for (let i = 0; i <= dayDiff; i++) {
+    const ymd = dayjs(startYmd).add(i, "day").format("YYYYMMDD");
 
-        for (const pachinkoType of pachinkoTypes) {
-          console.log("****************************");
-          console.log(pachinkoType.name);
-          console.log(dayjs(ymd).format("YYYY-MM-DD"));
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          await savePachinkoTypesOnDailyPost(ymd, tx);
 
-          await saveDailyActivityOfPachinkoType(pachinkoType, ymd, tx);
+          const pachinkoTypes = await tx.pachinko_type.findMany();
 
-          console.log("****************************");
-        }
-      }
-    },
-    { timeout: 1000000 }
-  );
+          for (const pachinkoType of pachinkoTypes) {
+            console.log("****************************");
+            console.log(pachinkoType.name);
+            console.log(dayjs(ymd).format("YYYY-MM-DD"));
+
+            await saveDailyActivityOfPachinkoType(pachinkoType, ymd, tx);
+
+            console.log("****************************");
+          }
+        },
+        { timeout: 100000000 }
+      );
+    } catch (e) {
+      console.error(e);
+      console.log(`${ymd}からリトライしてください`);
+    }
+  }
 
   rl.close();
 };

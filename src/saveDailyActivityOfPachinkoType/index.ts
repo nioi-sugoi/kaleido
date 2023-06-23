@@ -93,6 +93,11 @@ export const saveDailyActivityOfPachinkoType = async (
       },
     });
 
+    // 総回転数0の場合はグラフが存在しない
+    if (totalGames === 0) {
+      return;
+    }
+
     const scripts = article
       .querySelector(".slump_list")
       ?.querySelectorAll("script");
