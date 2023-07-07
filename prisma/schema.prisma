@@ -24,7 +24,8 @@ model pachinko_daily_activity {
   location         Int
   total_games      Int
   payout Int
-
+  edge_distance Int?
+  edge_ref edge_type?
   pachinko_type pachinko_type @relation(fields: [pachinko_type_id], references: [id])
   payout_snapshots pachinko_payout_snapshot[]
 
@@ -38,6 +39,7 @@ model pachinko_payout_snapshot {
   id               Int      @id @default(autoincrement())
   pachinko_daily_activity_id Int
   payout Int
+  diff Int?
   order Int
 
   pachinko_daily_activity pachinko_daily_activity @relation(fields: [pachinko_daily_activity_id], references: [id])
@@ -46,4 +48,9 @@ model pachinko_payout_snapshot {
   updated_at       DateTime @default(now()) @db.Timestamp(6) @updatedAt
 
   @@unique([pachinko_daily_activity_id, order])
+}
+
+enum edge_type {
+  inner
+  outer
 }

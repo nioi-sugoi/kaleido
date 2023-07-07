@@ -7,6 +7,9 @@
     "strict": true,
     "skipLibCheck": true,
     "baseUrl": "src",
+    "types": [
+      "vitest/globals"
+    ]
   },
   "ts-node": {
     "require": ["tsconfig-paths/register"]
