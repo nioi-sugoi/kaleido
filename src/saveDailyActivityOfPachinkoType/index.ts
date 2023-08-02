@@ -1,16 +1,17 @@
 import { JSDOM } from "jsdom";
-import { pachinko_type, Prisma } from "@prisma/client";
+import { pachinko_type, parlor, Prisma } from "@prisma/client";
 import dayjs from "dayjs";
 import { savePayoutSnapshots } from "saveDailyActivityOfPachinkoType/savePayoutSnapshots";
 import { getPostId } from "saveDailyActivityOfPachinkoType/getPostId";
 import { toTokyoDate } from "utils/toTokyoDate";
 
 export const saveDailyActivityOfPachinkoType = async (
+  parlor: parlor,
   pachinkoType: pachinko_type,
   ymd: string,
   prisma: Prisma.TransactionClient
 ) => {
-  const postId = await getPostId(ymd);
+  const postId = await getPostId(parlor.name, ymd);
 
   if (postId === undefined) {
     console.log("該当日付のデータがありません");
@@ -39,13 +40,39 @@ export const saveDailyActivityOfPachinkoType = async (
 
   if (trs.length === 0) {
     console.log("存在しない機種のようです");
+    return;
   }
 
-  // i = 0 はヘッダーなのでスキップ
-  for (let i = 1; i < trs.length; i++) {
-    const tr = trs[i];
+  const contentTrs: HTMLTableRowElement[] = [];
 
+  trs.forEach((tr) => {
     const tds = tr.querySelectorAll("td");
+
+    // ヘッダー行はスキップ（設置台数が多い場合はヘッダー行が複数存在する）
+    if (tds.length === 0) {
+      return;
+    }
+
+    contentTrs.push(tr);
+  });
+
+  const scripts = article
+    .querySelector(".slump_list")
+    ?.querySelectorAll("script");
+
+  if (!scripts || scripts.length === 0) {
+    throw new Error("scripts is null");
+  }
+
+  for (let i = 0; i < contentTrs.length; i++) {
+    const contentTr = contentTrs[i];
+
+    const tds = contentTr.querySelectorAll("td");
+
+    // ヘッダー行はスキップ（設置台数が多い場合はヘッダー行が複数存在する）
+    if (tds.length === 0) {
+      continue;
+    }
 
     const locationStr = tds[0].querySelector("a")?.textContent;
 
@@ -71,7 +98,8 @@ export const saveDailyActivityOfPachinkoType = async (
 
     const existing = await prisma.pachinko_daily_activity.findUnique({
       where: {
-        pachinko_type_id_location_date: {
+        pachinko_type_id_location_date_parlor_id: {
+          parlor_id: parlor.id,
           location,
           date: toTokyoDate(dayjs(ymd).toDate()),
           pachinko_type_id: pachinkoType.id,
@@ -90,6 +118,7 @@ export const saveDailyActivityOfPachinkoType = async (
         payout,
         total_games: totalGames,
         pachinko_type_id: pachinkoType.id,
+        parlor_id: parlor.id,
       },
     });
 
@@ -98,14 +127,13 @@ export const saveDailyActivityOfPachinkoType = async (
       return;
     }
 
-    const scripts = article
-      .querySelector(".slump_list")
-      ?.querySelectorAll("script");
+    const script = scripts[i];
 
-    if (!scripts || scripts.length === 0) {
-      throw new Error("scripts is null");
+    if (!script) {
+      console.log(i);
+      throw new Error("script is null");
     }
 
-    await savePayoutSnapshots(scripts[i - 1], dailyActivity.id, prisma);
+    await savePayoutSnapshots(script, dailyActivity.id, prisma);
   }
 };

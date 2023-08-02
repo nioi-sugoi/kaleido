@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 type PostIdByDate = { ymd: string; postId: string };
 
-const getPostIdsByDate = async () => {
+const getPostIdsByDate = async (parlorName: string) => {
   let page = 1;
 
   const result: PostIdByDate[] = [];
@@ -13,12 +13,12 @@ const getPostIdsByDate = async () => {
 
     if (page === 1) {
       res = await fetch(
-        `${process.env.WEBSITE_ENDPOINT}/pachinko/tag/${process.env.PARLOR_NAME}/`,
+        `${process.env.WEBSITE_ENDPOINT}/pachinko/tag/${parlorName}/`,
         { redirect: "manual" }
       );
     } else {
       res = await fetch(
-        `${process.env.WEBSITE_ENDPOINT}/pachinko/tag/${process.env.PARLOR_NAME}/page/${page}/`,
+        `${process.env.WEBSITE_ENDPOINT}/pachinko/tag/${parlorName}/page/${page}/`,
         { redirect: "manual" }
       );
     }
@@ -71,9 +71,9 @@ const getPostIdsByDate = async () => {
 
 let postIdsByDate: PostIdByDate[];
 
-export const getPostId = async (ymd: string) => {
+export const getPostId = async (parlorName: string, ymd: string) => {
   if (postIdsByDate === undefined) {
-    postIdsByDate = await getPostIdsByDate();
+    postIdsByDate = await getPostIdsByDate(parlorName);
   }
 
   return postIdsByDate.find((postIdByDate) => ymd === postIdByDate.ymd)?.postId;

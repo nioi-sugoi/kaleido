@@ -1,12 +1,13 @@
 import { JSDOM } from "jsdom";
-import { Prisma } from "@prisma/client";
+import { Prisma, parlor } from "@prisma/client";
 import { getPostId } from "saveDailyActivityOfPachinkoType/getPostId";
 
 export const savePachinkoTypesOnDailyPost = async (
+  parlor: parlor,
   ymd: string,
   prisma: Prisma.TransactionClient
 ) => {
-  const postId = await getPostId(ymd);
+  const postId = await getPostId(parlor.name, ymd);
 
   if (postId === undefined) {
     console.log("該当日付のデータがありません");

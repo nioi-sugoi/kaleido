@@ -15,11 +15,12 @@ export const savePayoutSnapshots = async (
     return;
   }
 
-  const payoutsStr = script?.textContent?.match(
+  const payoutsStr = script.textContent?.match(
     /data: \[\s*((?:-?\d*\.?\d+,)*-?\d*\.?\d+)\s*]/
   )?.[1];
 
   if (payoutsStr == null) {
+    console.log(script)
     throw new Error("payoutsStr is null");
   }
 

@@ -18,8 +18,15 @@ const main = async () => {
     output: process.stdout,
   });
 
+  const parlorId = Number(await rl.question("parlorId: "));
   const startYmd = await rl.question("開始のYYYYMMDD: ");
   const endYmd = await rl.question("終了のYYYYMMDD: ");
+
+  const parlor = await prisma.parlor.findUniqueOrThrow({
+    where: {
+      id: parlorId,
+    },
+  });
 
   const dayDiff = dayjs(endYmd).diff(dayjs(startYmd), "day");
 
@@ -29,7 +36,7 @@ const main = async () => {
     try {
       await prisma.$transaction(
         async (tx) => {
-          await savePachinkoTypesOnDailyPost(ymd, tx);
+          await savePachinkoTypesOnDailyPost(parlor, ymd, tx);
 
           const pachinkoTypes = await tx.pachinko_type.findMany();
 
@@ -38,7 +45,12 @@ const main = async () => {
             console.log(pachinkoType.name);
             console.log(dayjs(ymd).format("YYYY-MM-DD"));
 
-            await saveDailyActivityOfPachinkoType(pachinkoType, ymd, tx);
+            await saveDailyActivityOfPachinkoType(
+              parlor,
+              pachinkoType,
+              ymd,
+              tx
+            );
 
             console.log("****************************");
           }
