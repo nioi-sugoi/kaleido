@@ -31,14 +31,8 @@ const getPostIdsByDate = async (parlorName: string) => {
     const dom = new JSDOM(body);
 
     dom.window.document
-      .querySelectorAll<HTMLDivElement>(".ichiran_title")
-      .forEach((div) => {
-        const a = div.querySelector("a");
-
-        if (!a) {
-          throw new Error("a is null");
-        }
-
+      .querySelectorAll<HTMLLinkElement>(".table_wrap td a")
+      .forEach((a) => {
         const postId = a.href.match(/pachinko\/(\d+)\//)?.[1];
 
         if (postId == null) {

@@ -56,13 +56,13 @@ export const saveDailyActivityOfPachinkoType = async (
     contentTrs.push(tr);
   });
 
-  const scripts = article
-    .querySelector(".slump_list")
-    ?.querySelectorAll("script");
+  const slumpList = article.querySelector(".slump_list");
 
-  if (!scripts || scripts.length === 0) {
-    throw new Error("scripts is null");
+  if (!slumpList) {
+    return;
   }
+
+  const scripts = slumpList.querySelectorAll("script");
 
   for (let i = 0; i < contentTrs.length; i++) {
     const contentTr = contentTrs[i];
