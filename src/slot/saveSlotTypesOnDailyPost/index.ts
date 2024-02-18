@@ -1,8 +1,7 @@
 import { JSDOM } from "jsdom";
 import { Prisma, parlor } from "@prisma/client";
-import { getPostId } from "saveDailyActivityOfPachinkoType/getPostId";
-
-export const savePachinkoTypesOnDailyPost = async (
+import { getPostId } from "slot/getPostId";
+export const saveSlotTypesOnDailyPost = async (
   parlor: parlor,
   ymd: string,
   prisma: Prisma.TransactionClient
@@ -14,9 +13,7 @@ export const savePachinkoTypesOnDailyPost = async (
     return;
   }
 
-  const res = await fetch(
-    `${process.env.WEBSITE_ENDPOINT}/pachinko/${postId}/`
-  );
+  const res = await fetch(`${process.env.WEBSITE_ENDPOINT}/${postId}/`);
   const body = await res.text();
   const dom = new JSDOM(body);
 
@@ -27,30 +24,29 @@ export const savePachinkoTypesOnDailyPost = async (
   }
 
   // 最初のテーブル要素は除く
-  const tables = article.querySelectorAll("table:not(.sou)");
+  const tables = Array.from(article.querySelectorAll("table:not(.sou)"));
+
+  // 最後のテーブル要素も除く
+  tables.pop()
 
   for (const table of tables) {
     const as = table.querySelectorAll("a");
 
     for (const a of as) {
-      const pachinkoTypeName = a.textContent;
+      const slotTypeName = a.textContent;
 
-      if (pachinkoTypeName === null) {
-        throw new Error('pachikoTypeName not found in "a" tag');
+      if (slotTypeName === null) {
+        throw new Error('slotTypeName not found in "a" tag');
       }
 
-      console.log("%%%%%%%%%%%%%%%%%");
-      console.log(pachinkoTypeName);
-      console.log("%%%%%%%%%%%%%%%%%");
-
       // 機種が登録されていなかったら登録する
-      await prisma.pachinko_type.upsert({
+      await prisma.slot_type.upsert({
         where: {
-          name: pachinkoTypeName,
+          name: slotTypeName,
         },
         update: {},
         create: {
-          name: pachinkoTypeName,
+          name: slotTypeName,
         },
       });
     }

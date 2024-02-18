@@ -6,7 +6,8 @@
   "author": "nioi-sugoi <nioisugoi@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start:pachinko": "ts-node src/pachinko/index.ts",
+    "start:slot": "ts-node src/slot/index.ts"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.1",

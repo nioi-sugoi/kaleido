@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { saveDailyActivityOfPachinkoType } from "saveDailyActivityOfPachinkoType";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { createInterface } from "readline/promises";
-import { savePachinkoTypesOnDailyPost } from "savePachinkoTypesOnDailyPost";
+import { saveSlotTypesOnDailyPost } from "slot/saveSlotTypesOnDailyPost";
+import {saveDailyActivityOfSlotType} from "slot/saveDailyActivityOfSlotType";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -36,21 +36,16 @@ const main = async () => {
     try {
       await prisma.$transaction(
         async (tx) => {
-          await savePachinkoTypesOnDailyPost(parlor, ymd, tx);
+          await saveSlotTypesOnDailyPost(parlor, ymd, tx);
 
-          const pachinkoTypes = await tx.pachinko_type.findMany();
+          const slotTypes = await tx.slot_type.findMany();
 
-          for (const pachinkoType of pachinkoTypes) {
+          for (const slotType of slotTypes) {
             console.log("****************************");
-            console.log(pachinkoType.name);
+            console.log(slotType.name);
             console.log(dayjs(ymd).format("YYYY-MM-DD"));
 
-            await saveDailyActivityOfPachinkoType(
-              parlor,
-              pachinkoType,
-              ymd,
-              tx
-            );
+            await saveDailyActivityOfSlotType(parlor, slotType, ymd, tx);
 
             console.log("****************************");
           }

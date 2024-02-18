@@ -1,13 +1,12 @@
 import { JSDOM } from "jsdom";
-import { pachinko_type, parlor, Prisma } from "@prisma/client";
+import { slot_type, parlor, Prisma } from "@prisma/client";
 import dayjs from "dayjs";
-import { savePayoutSnapshots } from "saveDailyActivityOfPachinkoType/savePayoutSnapshots";
-import { getPostId } from "saveDailyActivityOfPachinkoType/getPostId";
+import { getPostId } from "slot/getPostId";
 import { toTokyoDate } from "utils/toTokyoDate";
 
-export const saveDailyActivityOfPachinkoType = async (
+export const saveDailyActivityOfSlotType = async (
   parlor: parlor,
-  pachinkoType: pachinko_type,
+  slotType: slot_type,
   ymd: string,
   prisma: Prisma.TransactionClient
 ) => {
@@ -18,9 +17,9 @@ export const saveDailyActivityOfPachinkoType = async (
     return;
   }
 
-  const res = await fetch(
-    `${process.env.WEBSITE_ENDPOINT}/pachinko/${postId}/?kishu=${pachinkoType.name}`
-  );
+  const url = `${process.env.WEBSITE_ENDPOINT}/${postId}/?kishu=${slotType.name}`;
+
+  const res = await fetch(url);
   const body = await res.text();
   const dom = new JSDOM(body);
 
@@ -30,7 +29,7 @@ export const saveDailyActivityOfPachinkoType = async (
     throw new Error(`article is null(postId = ${postId})`);
   }
 
-  const table = article.querySelector("table");
+  const table = article.querySelector(".table_wrap table");
 
   if (!table) {
     throw new Error("table is null");
@@ -56,14 +55,6 @@ export const saveDailyActivityOfPachinkoType = async (
     contentTrs.push(tr);
   });
 
-  const slumpList = article.querySelector(".slump_list");
-
-  if (!slumpList) {
-    return;
-  }
-
-  const scripts = slumpList.querySelectorAll("script");
-
   for (let i = 0; i < contentTrs.length; i++) {
     const contentTr = contentTrs[i];
 
@@ -74,9 +65,15 @@ export const saveDailyActivityOfPachinkoType = async (
       continue;
     }
 
+    // 「平均」の行はスキップ
+    if (i === contentTrs.length - 1) {
+      continue;
+    }
+
     const locationStr = tds[0].querySelector("a")?.textContent;
 
     if (locationStr == null) {
+      console.log(tds[0], i);
       throw new Error("location is null");
     }
 
@@ -96,13 +93,13 @@ export const saveDailyActivityOfPachinkoType = async (
     const payout = Number(payoutStr);
     const totalGames = Number(totalGamesStr);
 
-    const existing = await prisma.pachinko_daily_activity.findUnique({
+    const existing = await prisma.slot_daily_activity.findUnique({
       where: {
-        pachinko_type_id_location_date_parlor_id: {
+        slot_type_id_location_date_parlor_id: {
           parlor_id: parlor.id,
           location,
           date: toTokyoDate(dayjs(ymd).toDate()),
-          pachinko_type_id: pachinkoType.id,
+          slot_type_id: slotType.id,
         },
       },
     });
@@ -111,29 +108,15 @@ export const saveDailyActivityOfPachinkoType = async (
       continue;
     }
 
-    const dailyActivity = await prisma.pachinko_daily_activity.create({
+    await prisma.slot_daily_activity.create({
       data: {
         date: toTokyoDate(dayjs(ymd).toDate()),
         location,
         payout,
         total_games: totalGames,
-        pachinko_type_id: pachinkoType.id,
+        slot_type_id: slotType.id,
         parlor_id: parlor.id,
       },
     });
-
-    // 総回転数0の場合はグラフが存在しない
-    if (totalGames === 0) {
-      return;
-    }
-
-    const script = scripts[i];
-
-    if (!script) {
-      console.log(i);
-      throw new Error("script is null");
-    }
-
-    await savePayoutSnapshots(script, dailyActivity.id, prisma);
   }
 };
